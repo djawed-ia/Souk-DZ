@@ -134,6 +134,9 @@ LISTE_PAYS_INDICATIFS = [
     "🇫🇷 +33", "🇧🇪 +32", "🇨🇭 +41", "🇨🇦 +1", "🇺🇸 +1", "🇬🇧 +44"
 ]
 
+# 🔑 LE CODE MASTER ADMINISTRATEUR POUR LES TESTS
+CODE_MASTER = "0000"
+
 # --- 3. PERSISTANCE DES DONNÉES EN JSON LOCAL ---
 DB_USERS = "souk_dz_users.json"
 DB_ADS = "souk_dz_ads.json"
@@ -166,6 +169,7 @@ if "ads" not in st.session_state:
 # --- 4. FONCTION D'ENVOI EMAIL OTP ---
 def envoyer_email_otp(destinataire, code):
     editeur_email = "damerdjidjawed@gmail.com"
+    # Si tu as un nouveau mot de passe à 16 lettres, remplace-le ici :
     editeur_mot_de_passe = "mvgr zgci lesi epfd"
     
     msg = MIMEMultipart()
@@ -177,7 +181,7 @@ def envoyer_email_otp(destinataire, code):
     msg.attach(MIMEText(corps, 'plain'))
     
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=8)
         server.starttls()
         server.login(editeur_email, editeur_mot_de_passe)
         text = msg.as_string()
@@ -185,7 +189,7 @@ def envoyer_email_otp(destinataire, code):
         server.quit()
         return True
     except Exception as e:
-        print(f"Erreur d'envoi SMTP : {e}")
+        # Renvoie False en silence pour déclencher le mode démo sans bloquer l'interface
         return False
 
 if "langue" not in st.session_state:
@@ -330,9 +334,10 @@ elif st.session_state.page == "inscription":
             
             succes = envoyer_email_otp(ins_email, code_genere)
             if succes:
-                st.success("✉️ Code de vérification envoyé sur votre email !")
+                st.success("✉️ Code de vérification envoyé sur votre email (Inbox) !")
             else:
-                st.warning(f"💡 Mode démo/secours : Code généré -> {code_genere}")
+                # Mode de secours transparent si Google bloque les identifiants
+                st.info(f"💡 Mode Démo Activé : Code généré -> {code_genere}")
         else:
             st.error(T["erreur_champs"])
             
@@ -482,14 +487,16 @@ elif st.session_state.page == "details_annonce":
         col_btn_mod, col_btn_sup = st.columns(2)
         with col_btn_mod:
             if st.button(T["btn_modifier"], use_container_width=True):
-                if code_verif_input == ad["code_secret"]:
+                # INTÉGRATION CODE_MASTER RECHERCHÉ :
+                if code_verif_input == ad["code_secret"] or code_verif_input == CODE_MASTER:
                     st.session_state.page = "modifier_annonce"
                     st.rerun()
                 else:
                     st.error(T["erreur_code"])
         with col_btn_sup:
             if st.button(T["btn_supprimer"], use_container_width=True):
-                if code_verif_input == ad["code_secret"]:
+                # INTÉGRATION CODE_MASTER RECHERCHÉ :
+                if code_verif_input == ad["code_secret"] or code_verif_input == CODE_MASTER:
                     st.session_state.page = "supprimer_annonce"
                     st.rerun()
                 else:
