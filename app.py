@@ -91,7 +91,7 @@ TRADUCTIONS = {
         "code_6_label": "أدخل الأرقام الستة",
         "btn_valider_inscription": "تأكيد التسجيل 🎉",
         "btn_retour_login": "العودة إلى صفحة تسجيل الدخول",
-        "espace_de": "👋 حساب",
+        "espace_de": "حساب 👋",
         "btn_deposer": "➕ نشر إعلان",
         "btn_deconnexion": "🔴 تسجيل الخروج",
         "nouvelle_annonce_titre": "🚀 إعلان جديد",
@@ -149,15 +149,20 @@ def charger_donnees(fichier, par_defaut):
             return par_defaut
     return par_defaut
 
-def sauvegarder_donnees(fichier, donnees):
+# Correction majeure : Deux fonctions de sauvegarde bien distinctes pour éviter les bugs d'attributs
+def sauvegarder_utilisateurs(donnees_users):
+    with open(DB_USERS, "w", encoding="utf-8") as f:
+        json.dump(donnees_users, f, ensure_ascii=False, indent=4)
+
+def sauvegarder_annonces(donnees_ads):
     donnees_propres = []
-    for ad in donnees:
+    for ad in donnees_ads:
         ad_copie = ad.copy()
         if "image_bytes" in ad_copie:
             ad_copie.pop("image_bytes")
         donnees_propres.append(ad_copie)
         
-    with open(fichier, "w", encoding="utf-8") as f:
+    with open(DB_ADS, "w", encoding="utf-8") as f:
         json.dump(donnees_propres, f, ensure_ascii=False, indent=4)
 
 if "users" not in st.session_state:
@@ -167,7 +172,7 @@ if "ads" not in st.session_state:
 
 # --- 4. FONCTION D'ENVOI EMAIL OTP SÉCURISÉE ---
 def envoyer_email_otp(destinataire, code):
-    # AJUSTEMENT : Utilisation de l'adresse émettrice correcte liée au mot de passe d'application
+    # Utilisation forcée de l'adresse configurée sur ton serveur SMTP d'application
     editeur_email = "damerdjidjawed@gmail.com"
     editeur_mot_de_passe = "mvgr zgci lesi epfd"
     
@@ -188,7 +193,7 @@ def envoyer_email_otp(destinataire, code):
         server.quit()
         return True
     except Exception as e:
-        # En cas d'erreur SMTP, on retourne simplement False pour activer le mode démo sans bloquer l'application
+        # File d'attente / Secours visuel si le réseau coupe ou si l'adresse saisie n'est pas acceptée par Google
         return False
 
 if "langue" not in st.session_state:
@@ -329,12 +334,11 @@ elif st.session_state.page == "inscription":
             st.session_state.otp_valide = code_genere
             st.session_state.otp_envoye = True
             
-            # Tente l'envoi réel
             succes = envoyer_email_otp(ins_email, code_genere)
             if succes:
                 st.success("✉️ Code de vérification envoyé sur votre email !")
             else:
-                # Si échec SMTP (comme l'erreur d'identification), affiche proprement le code à l'écran pour la démo jury
+                # Mode de secours automatique : si le SMTP plante en pleine soutenance, le code apparaît à l'écran
                 st.info(f"💡 [Mode Démo] Code de vérification généré : {code_genere}")
         else:
             st.error(T["erreur_champs"])
@@ -349,7 +353,7 @@ elif st.session_state.page == "inscription":
                     "password": ins_mdp,
                     "telephone": numero_final
                 }
-                sauvegarder_donnees(DB_USERS, st.session_state.users)
+                sauvegarder_utilisateurs(st.session_state.users) # Modifié ici (Correction du crash)
                 st.session_state.user_connecte = ins_pseudo
                 st.session_state.page = "vitrine"
                 st.rerun()
@@ -440,7 +444,7 @@ elif st.session_state.page == "ajouter_annonce":
                     "image_bytes": img_data
                 }
                 st.session_state.ads.append(nouvelle_ad)
-                sauvegarder_donnees(DB_ADS, st.session_state.ads)
+                sauvegarder_annonces(st.session_state.ads) # Modifié ici (Fonction dédiée)
                 
                 afficher_boite_code_secret(code_sec_genere)
             else:
@@ -521,7 +525,7 @@ elif st.session_state.page == "modifier_annonce":
             st.session_state.ads[idx]["ville"] = mod_ville
             st.session_state.ads[idx]["prix"] = mod_prix
             st.session_state.ads[idx]["description"] = mod_desc
-            sauvegarder_donnees(DB_ADS, st.session_state.ads)
+            sauvegarder_annonces(st.session_state.ads) # Modifié ici
             st.success(T["succes_modif"])
             st.session_state.page = "details_annonce"
             st.rerun()
@@ -537,7 +541,7 @@ elif st.session_state.page == "supprimer_annonce":
     st.warning(T["warning_suppr"])
     if st.button(T["btn_confirmer_suppr"], type="primary", use_container_width=True):
         st.session_state.ads.pop(idx)
-        sauvegarder_donnees(DB_ADS, st.session_state.ads)
+        sauvegarder_annonces(st.session_state.ads) # Modifié ici
         st.success(T["succes_suppr"])
         st.session_state.page = "vitrine"
         st.rerun()
