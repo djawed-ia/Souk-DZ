@@ -134,7 +134,6 @@ LISTE_PAYS_INDICATIFS = [
     "🇫🇷 +33", "🇧🇪 +32", "🇨🇭 +41", "🇨🇦 +1", "🇺🇸 +1", "🇬🇧 +44"
 ]
 
-# 🔑 LE CODE MASTER ADMINISTRATEUR POUR LES TESTS
 CODE_MASTER = "0000"
 
 # --- 3. PERSISTANCE DES DONNÉES EN JSON LOCAL ---
@@ -166,22 +165,22 @@ if "users" not in st.session_state:
 if "ads" not in st.session_state:
     st.session_state.ads = charger_donnees(DB_ADS, [])
 
-# --- 4. FONCTION D'ENVOI EMAIL OTP ---
+# --- 4. FONCTION D'ENVOI EMAIL OTP SÉCURISÉE ---
 def envoyer_email_otp(destinataire, code):
+    # AJUSTEMENT : Utilisation de l'adresse émettrice correcte liée au mot de passe d'application
     editeur_email = "damerdjidjawed@gmail.com"
-    # Si tu as un nouveau mot de passe à 16 lettres, remplace-le ici :
     editeur_mot_de_passe = "mvgr zgci lesi epfd"
     
     msg = MIMEMultipart()
     msg['From'] = editeur_email
     msg['To'] = destinataire
-    msg['Subject'] = f"Code de vérification Souk DZ : {code}"
+    msg['Subject'] = f"Code de verification Souk DZ : {code}"
     
-    corps = f"Bonjour,\n\nVotre code de vérification pour valider votre inscription sur Souk DZ est : {code}\n\nCordialement,\nL'équipe Souk DZ."
+    corps = f"Bonjour,\n\nVotre code de verification pour valider votre inscription sur Souk DZ est : {code}\n\nCordialement,\nL'equipe Souk DZ."
     msg.attach(MIMEText(corps, 'plain'))
     
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=8)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
         server.starttls()
         server.login(editeur_email, editeur_mot_de_passe)
         text = msg.as_string()
@@ -189,7 +188,7 @@ def envoyer_email_otp(destinataire, code):
         server.quit()
         return True
     except Exception as e:
-        # Renvoie False en silence pour déclencher le mode démo sans bloquer l'interface
+        # En cas d'erreur SMTP, on retourne simplement False pour activer le mode démo sans bloquer l'application
         return False
 
 if "langue" not in st.session_state:
@@ -219,7 +218,6 @@ css_dynamique = f"""
         color: {"#f1f5f9" if st.session_state.theme in ["Sombre", "داكن"] else "#0f172a"};
     }}
     
-    /* TOUS LES CHAMPS DE SAISIE EN BLANC AVEC TEXTE NOIR */
     div[data-baseweb="input"] input, 
     div[data-baseweb="textarea"] textarea,
     .stTextInput input, 
@@ -237,7 +235,6 @@ css_dynamique = f"""
         opacity: 1 !important;
     }}
 
-    /* SUPPRESSION DES BOUTONS PLUS ET MOINS DES CHAMPS NUMÉRIQUES */
     div[data-baseweb="input"] button {{
         display: none !important;
     }}
@@ -332,12 +329,13 @@ elif st.session_state.page == "inscription":
             st.session_state.otp_valide = code_genere
             st.session_state.otp_envoye = True
             
+            # Tente l'envoi réel
             succes = envoyer_email_otp(ins_email, code_genere)
             if succes:
-                st.success("✉️ Code de vérification envoyé sur votre email (Inbox) !")
+                st.success("✉️ Code de vérification envoyé sur votre email !")
             else:
-                # Mode de secours transparent si Google bloque les identifiants
-                st.info(f"💡 Mode Démo Activé : Code généré -> {code_genere}")
+                # Si échec SMTP (comme l'erreur d'identification), affiche proprement le code à l'écran pour la démo jury
+                st.info(f"💡 [Mode Démo] Code de vérification généré : {code_genere}")
         else:
             st.error(T["erreur_champs"])
             
@@ -487,7 +485,6 @@ elif st.session_state.page == "details_annonce":
         col_btn_mod, col_btn_sup = st.columns(2)
         with col_btn_mod:
             if st.button(T["btn_modifier"], use_container_width=True):
-                # INTÉGRATION CODE_MASTER RECHERCHÉ :
                 if code_verif_input == ad["code_secret"] or code_verif_input == CODE_MASTER:
                     st.session_state.page = "modifier_annonce"
                     st.rerun()
@@ -495,7 +492,6 @@ elif st.session_state.page == "details_annonce":
                     st.error(T["erreur_code"])
         with col_btn_sup:
             if st.button(T["btn_supprimer"], use_container_width=True):
-                # INTÉGRATION CODE_MASTER RECHERCHÉ :
                 if code_verif_input == ad["code_secret"] or code_verif_input == CODE_MASTER:
                     st.session_state.page = "supprimer_annonce"
                     st.rerun()
