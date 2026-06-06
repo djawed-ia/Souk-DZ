@@ -166,7 +166,7 @@ if "ads" not in st.session_state:
 # --- 4. FONCTION D'ENVOI EMAIL OTP ---
 def envoyer_email_otp(destinataire, code):
     editeur_email = "damerdjidjawed@gmail.com"
-    editeur_mot_de_passe = "qtlt epgu fkry tmtn"
+    editeur_mot_de_passe = "mvgr zgci lesi epfd"
     
     msg = MIMEMultipart()
     msg['From'] = editeur_email
